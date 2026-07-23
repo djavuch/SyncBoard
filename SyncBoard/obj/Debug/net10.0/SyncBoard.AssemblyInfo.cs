@@ -10,10 +10,11 @@
 using System;
 using System.Reflection;
 
+[assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("a92b220a-36ea-411e-afb8-4429d2d6b3e5")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("SyncBoard")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3ebc0036566543e01620846b036dc202948d9472")]
 [assembly: System.Reflection.AssemblyProductAttribute("SyncBoard")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SyncBoard")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
