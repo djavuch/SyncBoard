@@ -1,0 +1,14 @@
+﻿services:
+  syncboard-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: syncboard-sql-container
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=SuperSecretPass123!
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+
+volumes:
+  mssql-data:

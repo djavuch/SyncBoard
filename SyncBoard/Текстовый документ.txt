@@ -1,0 +1,10 @@
+bin/
+obj/
+
+
+.idea/
+.rider/
+*.user
+
+*.log
+.pnpm-store/
