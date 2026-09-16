@@ -7,7 +7,7 @@ using SyncBoard.Hubs.Board;
 
 namespace SyncBoard.Features.Cards.MoveCard;
 
-public abstract record MoveCardRequest(Guid ToColumnId, int Position);
+public sealed record MoveCardRequest(Guid ToColumnId, int Position);
 
 public record MoveCardResponse(Guid CardId, Guid ToColumnId, int Position);
 
@@ -54,9 +54,9 @@ public class MoveCardCommandHandler : IRequestHandler<MoveCardCommand, IResult>
         if (card is null)
             return Results.NotFound("Card not found.");
 
-        var boardId = card.Column?.Board?.Id;
+        var boardId = card.Column.Board.Id;
 
-        if (boardId is null || card.Column?.Board?.OwnerId != request.UserId)
+        if (card.Column.Board.OwnerId != request.UserId)
             return Results.Forbid();
 
         var fromColumnId = card.ColumnId;
@@ -72,15 +72,14 @@ public class MoveCardCommandHandler : IRequestHandler<MoveCardCommand, IResult>
         if (targetColumn.Board.Id != boardId)
             return Results.BadRequest("Target column is on a different board.");
         
-        // Moving cards
         card.ColumnId = request.ToColumnId;
         card.Position = request.Position;
         await _dbContext.SaveChangesAsync(ct);
 
-        await _hub.Clients.Group(boardId.Value.ToString())
+        await _hub.Clients.Group(boardId.ToString())
             .SendAsync("CardMoved", new CardMovedEvent(
                 card.Id,
-                fromColumnId!.Value,
+                fromColumnId,
                 request.ToColumnId,
                 request.Position), ct);
 

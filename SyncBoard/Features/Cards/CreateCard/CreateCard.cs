@@ -1,32 +1,38 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using SyncBoard.Database;
 using SyncBoard.Entities;
 using SyncBoard.Hubs.Board;
 
 namespace SyncBoard.Features.Cards.CreateCard;
 
-public abstract record CreateCardRequest(string Title, Guid? ColumnId);
+public sealed record CreateCardRequest(string Title, Guid ColumnId);
 
-public record CreateCardResponse(Guid Id, string Title);
+public record CreateCardResponse(Guid Id, string Title, Guid ColumnId, int Position);
 
-public record CreateCardCommand(string Title, Guid? ColumnId) : IRequest<CreateCardResponse>;
+public record CreateCardCommand(string Title, Guid ColumnId, Guid UserId) : IRequest<IResult>;
 
 public static class CreateBoardEndpoint
 {
     public static void MapCreateCard(this IEndpointRouteBuilder app)
     {
-        app.MapPost("api/cards", async (CreateCardRequest request, ISender sender) =>
+        app.MapPost("api/cards", async (
+                ClaimsPrincipal principal,
+                CreateCardRequest request,
+                ISender sender) =>
         {
-            var command = new CreateCardCommand(request.Title, request.ColumnId);
-            var result = await sender.Send(command);
-            return Results.Ok(result);
-        });
+            var userId = Guid.Parse(principal.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var command = new CreateCardCommand(request.Title, request.ColumnId, userId);
+            return await sender.Send(command);
+        })
+        .RequireAuthorization()
+        .WithTags("Cards");
     }
 }
 
-public class CreateCardCommandHandler : IRequestHandler<CreateCardCommand, CreateCardResponse>
+public class CreateCardCommandHandler : IRequestHandler<CreateCardCommand, IResult>
 {
     private readonly AppDbContext _dbContext;
     private readonly IHubContext<BoardHub> _hub; 
@@ -37,31 +43,42 @@ public class CreateCardCommandHandler : IRequestHandler<CreateCardCommand, Creat
         _hub = hub;
     }
 
-    public async Task<CreateCardResponse> Handle(CreateCardCommand request, CancellationToken ct)
+    public async Task<IResult> Handle(CreateCardCommand request, CancellationToken ct)
     {
+        if (string.IsNullOrWhiteSpace(request.Title))
+        {
+            return Results.BadRequest(new
+            {
+                Error = "Card title is required."
+            });
+        }
+
+        if (request.ColumnId == Guid.Empty)
+            return Results.BadRequest("ColumnId is required.");
+
+        var column = await _dbContext.Columns
+            .Include(c => c.Board)
+            .FirstOrDefaultAsync(c => c.Id == request.ColumnId, ct);
+
+        if (column is null)
+            return Results.NotFound("Column not found.");
+
+        if (column.Board.OwnerId != request.UserId)
+            return Results.Forbid();
+
         var card = new Card(Guid.CreateVersion7(), request.Title, request.ColumnId);
 
         _dbContext.Cards.Add(card);
         await _dbContext.SaveChangesAsync(ct);
-        
-        Guid? boardId = null;
-        if (request.ColumnId.HasValue)
-        {
-            var columnId = request.ColumnId.Value;
-            boardId = await _dbContext.Columns
-                .AsNoTracking()
-                .Where(c => c.Id == columnId)
-                .Select(c => c.BoardId)
-                .FirstOrDefaultAsync(ct);
 
-            if (boardId.HasValue)
-            {
-                await _hub.Clients.Group(boardId.Value.ToString())
-                    .SendAsync("CardCreated", new CardCreatedEvent(
-                        card.Id, card.Title, columnId, card.Position), ct);
-            }
-        }
-        
-        return new CreateCardResponse(card.Id, card.Title);
+        await _hub.Clients.Group(column.BoardId.ToString())
+            .SendAsync("CardCreated", new CardCreatedEvent(
+                card.Id, card.Title, card.ColumnId, card.Position), ct);
+
+        return Results.Ok(new
+        {
+            Id = card.Id, 
+            Title = card.Title
+        });
     }
 }

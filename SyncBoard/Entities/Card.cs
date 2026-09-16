@@ -7,7 +7,7 @@ public class Card
     public string Description { get; set; } = string.Empty;
     
     public int Position { get; set; }
-    public Guid? ColumnId { get; set; }
+    public Guid ColumnId { get; set; }
     public Column Column { get; set; } = null!;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -17,7 +17,7 @@ public class Card
     
     private Card() {}
 
-    public Card(Guid id, string title, Guid? columnId)
+    public Card(Guid id, string title, Guid columnId)
     {
         if (string.IsNullOrWhiteSpace(title))
             throw new ArgumentException("Card title can't be empty.");

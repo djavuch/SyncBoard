@@ -8,7 +8,7 @@ using SyncBoard.Hubs.Board;
 
 namespace SyncBoard.Features.Cards.UpdateCard;
 
-public abstract record UpdateCardRequest(string? Title);
+public sealed record UpdateCardRequest(string? Title);
 
 public record UpdateCardResponse(Guid Id, string Title);
 
@@ -52,6 +52,14 @@ public class UpdateCardCommandHandler : IRequestHandler<UpdateCardCommand, IResu
 
         if (card is null)
             return Results.NotFound("Card not found.");
+        
+        if (!string.IsNullOrWhiteSpace(request.Title))
+        {
+            return Results.BadRequest(new
+            {
+                Error = "Card title is required."
+            });
+        }
         
         if (card.Column?.Board?.OwnerId != request.UserId)
             return Results.Forbid();

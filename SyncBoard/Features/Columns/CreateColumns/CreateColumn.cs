@@ -8,7 +8,7 @@ using SyncBoard.Hubs.Board;
 
 namespace SyncBoard.Features.Columns.CreateColumns;
 
-public record CreateColumnRequest(string Title, int Position);
+public sealed record CreateColumnRequest(string Title, int Position);
 public record CreateColumnResponse(Guid Id, string Title, int Position, Guid BoardId);
 
 public record CreateColumnCommand(Guid BoardId, string Title, int Position, Guid UserId) 
@@ -54,6 +54,22 @@ public class CreateColumnCommandHandler : IRequestHandler<CreateColumnCommand, I
 
         if (board.OwnerId != request.UserId)
             return Results.Forbid();
+        
+        if (string.IsNullOrWhiteSpace(request.Title))
+        {
+            return Results.BadRequest(new
+            {
+                Error = "Column title is required."
+            });
+        }
+        
+        if (request.Position < 0)
+        {
+            return Results.BadRequest(new
+            {
+                Error = "Column position can't be negative."
+            });
+        }
 
         var column = new Column(
             Guid.CreateVersion7(),

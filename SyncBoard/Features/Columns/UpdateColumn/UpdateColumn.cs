@@ -7,7 +7,7 @@ using SyncBoard.Hubs.Board;
 
 namespace SyncBoard.Features.Columns.UpdateColumn;
 
-public abstract record UpdateColumnRequest(string? Title, int? Position);
+public sealed record UpdateColumnRequest(string? Title, int? Position);
 
 public record UpdateColumnCommand(Guid ColumnId, string? Title, int? Position, Guid UserId) 
     : IRequest<IResult>;

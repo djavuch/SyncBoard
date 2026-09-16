@@ -1,6 +1,6 @@
 ﻿namespace SyncBoard.Hubs.Board;
 
-public record CardCreatedEvent(Guid CardId, string Title, Guid? ColumnId, int Position);
+public record CardCreatedEvent(Guid CardId, string Title, Guid ColumnId, int Position);
 public record CardUpdatedEvent(Guid CardId, string Title);
 public record CardMovedEvent(Guid CardId, Guid FromColumnId, Guid ToColumnId, int Position);
 public record CardDeletedEvent(Guid CardId);

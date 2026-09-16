@@ -5,7 +5,7 @@ using SyncBoard.Database;
 
 namespace SyncBoard.Features.Boards.UpdateBoard;
 
-public abstract record UpdateBoardRequest(string Title);
+public sealed record UpdateBoardRequest(string Title);
 public record UpdateBoardResponse(Guid Id, string Title);
 
 public record UpdateBoardCommand(Guid BoardId, string Title, Guid UserId) : IRequest<IResult>;
@@ -44,6 +44,22 @@ public class UpdateBoardCommandHandler : IRequestHandler<UpdateBoardCommand, IRe
 
         if (board is null)
             return Results.NotFound("Board not found.");
+        
+        if (!string.IsNullOrWhiteSpace(board.Title))
+        {
+            return Results.BadRequest(new
+            {
+                Error = "Board title is required."
+            });
+        }
+
+        if (request.Title.Length  > 256)
+        {
+            return Results.BadRequest(new
+            {
+                Error = "Board title can't be longer than 256 characters."
+            });
+        }
 
         if (board.OwnerId != request.UserId)
             return Results.Forbid();

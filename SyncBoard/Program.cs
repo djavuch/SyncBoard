@@ -22,6 +22,7 @@ using SyncBoard.Features.Columns.GetBoardColumns;
 using SyncBoard.Features.Columns.UpdateColumn;
 using SyncBoard.Hubs.Board;
 using SyncBoard.Infrastructure.Auth;
+using SyncBoard.Infrastructure.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -65,6 +66,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 builder.Services.AddSignalR();
 
@@ -106,6 +110,7 @@ app.MapGetCardByColumn();
 app.MapMoveCard();
 app.MapUpdateCard();
 
-app.MapHub<BoardHub>("/hubs/board");
+app.MapHub<BoardHub>("/hubs/board")
+    .RequireAuthorization();
 
 app.Run();
