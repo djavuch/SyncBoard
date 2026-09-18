@@ -22,12 +22,13 @@ public class JwtProvider
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()), 
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()), // Без этого не заведется .RequireAuthorization()
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new("firstName", user.FirstName ?? string.Empty),
-            new("lastName", user.LastName ?? string.Empty)
+            new("firstName", user.FirstName),
+            new("lastName", user.LastName)
         };
 
+        // Твоя каноничная генерация токена
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
