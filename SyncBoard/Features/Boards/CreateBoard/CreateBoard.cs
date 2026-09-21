@@ -48,7 +48,7 @@ public class CreateBoardCommandHandler : IRequestHandler<CreateBoardCommand, IRe
     {
         var title = request.Title;
 
-        if (!string.IsNullOrWhiteSpace(title))
+        if (string.IsNullOrWhiteSpace(title))
         {
             return Results.BadRequest(new
             {
@@ -56,7 +56,7 @@ public class CreateBoardCommandHandler : IRequestHandler<CreateBoardCommand, IRe
             });
         }
 
-        if (request.Title.Length  > 256)
+        if (title.Length  > 256)
         {
             return Results.BadRequest(new
             {
@@ -64,12 +64,12 @@ public class CreateBoardCommandHandler : IRequestHandler<CreateBoardCommand, IRe
             });
         }
         
+        var board = new Board(Guid.CreateVersion7(), title, request.OwnerId);
+        
         var ownerExists = await _dbContext.Users.AnyAsync(u => u.Id == request.OwnerId, ct);
 
         if (!ownerExists)
             return Results.Unauthorized();
-            
-        var board = new Board(Guid.CreateVersion7(), title, request.OwnerId);
 
         _dbContext.Boards.Add(board);
 

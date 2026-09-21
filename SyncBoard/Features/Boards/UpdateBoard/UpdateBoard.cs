@@ -45,7 +45,7 @@ public class UpdateBoardCommandHandler : IRequestHandler<UpdateBoardCommand, IRe
         if (board is null)
             return Results.NotFound("Board not found.");
         
-        if (!string.IsNullOrWhiteSpace(board.Title))
+        if (string.IsNullOrWhiteSpace(board.Title))
         {
             return Results.BadRequest(new
             {

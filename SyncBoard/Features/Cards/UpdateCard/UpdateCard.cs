@@ -53,7 +53,7 @@ public class UpdateCardCommandHandler : IRequestHandler<UpdateCardCommand, IResu
         if (card is null)
             return Results.NotFound("Card not found.");
         
-        if (!string.IsNullOrWhiteSpace(request.Title))
+        if (string.IsNullOrWhiteSpace(request.Title))
         {
             return Results.BadRequest(new
             {
