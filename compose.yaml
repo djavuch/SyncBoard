@@ -4,11 +4,41 @@
     container_name: syncboard-sql-container
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD}
+      - MSSQL_SA_PASSWORD=SuperSecretPass123!
     ports:
       - "1433:1433"
     volumes:
       - mssql-data:/var/opt/mssql
 
+  promotheus:
+    image: prom/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./SyncBoard/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.0
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "127.0.0.1:9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    mem_limit: 2g
+    
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    
 volumes:
   mssql-data:
+  prometheus_data:
+  elasticsearch_data:
+  grafana_data:

@@ -1,7 +1,13 @@
 using System.Text;
+using Elastic.Ingest.Elasticsearch;
+using Elastic.Ingest.Elasticsearch.DataStreams;
+using Elastic.Serilog.Sinks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Prometheus;
+using Serilog;
+using Serilog.Events;
 using SyncBoard.Database;
 using SyncBoard.Entities;
 using SyncBoard.Features.Auth.Login;
@@ -33,9 +39,24 @@ var connectionString = builder.Configuration.GetConnectionString("SyncBoardConne
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
 
+builder.Services.AddSerilog(configuration => configuration
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("Application", "SyncBoard")
+    // .WriteTo.Console()
+    .WriteTo.Elasticsearch(
+        [new Uri("http://localhost:9200")],
+        options =>
+        {
+            options.DataStream = 
+                new DataStreamName("logs", "syncboard", "development");
+            
+            options.BootstrapMethod = BootstrapMethod.Failure;
+        }));
+
 builder.Services.AddIdentityCore<User>(options =>
     {
-        // Настройки попроще чисто для удобства разработки
         options.Password.RequireDigit = false;
         options.Password.RequireLowercase = false;
         options.Password.RequireNonAlphanumeric = false;
@@ -76,12 +97,20 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+app.UseRouting();
+
+app.UseSerilogRequestLogging();
+app.UseHttpMetrics();
+
 app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapGet("/debug/error", IResult () =>
+            throw new InvalidOperationException(
+                "Monitoring test: intentional failure"))
+        .AllowAnonymous();
 }
 
 app.UseHttpsRedirection();
@@ -114,5 +143,7 @@ app.MapUpdateCard();
 
 app.MapHub<BoardHub>("/hubs/board")
     .RequireAuthorization();
+
+app.MapMetrics();
 
 app.Run();

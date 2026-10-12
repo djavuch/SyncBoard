@@ -2,6 +2,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SyncBoard.Database;
+using System.Diagnostics;
 
 namespace SyncBoard.Features.Boards.GetAllBoards;
 
@@ -28,19 +29,38 @@ public static class GetAllBoardsEndpoint
 public class GetAllBoardsQueryHandler : IRequestHandler<GetAllBoardsQuery, IResult>
 {
     private readonly AppDbContext _dbContext;
+    private readonly ILogger<GetAllBoardsQueryHandler> _logger;
 
-    public GetAllBoardsQueryHandler(AppDbContext dbContext)
+    public GetAllBoardsQueryHandler(
+        AppDbContext dbContext,
+        ILogger<GetAllBoardsQueryHandler> logger)
     {
         _dbContext = dbContext;
+        _logger = logger;
     }
 
-    public async Task<IResult> Handle(GetAllBoardsQuery request, CancellationToken cancellationToken)
+
+    public async Task<IResult> Handle(
+        GetAllBoardsQuery request,
+        CancellationToken cancellationToken)
     {
+        var started = Stopwatch.GetTimestamp();
+
         var boards = await _dbContext.Boards
             .Where(b => b.OwnerId == request.UserId)
             .OrderByDescending(b => b.CreatedAt)
             .Select(b => new BoardResponse(b.Id, b.Title, b.CreatedAt))
             .ToListAsync(cancellationToken);
+
+        var durationMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+
+        if (durationMs >= 100)
+        {
+            _logger.LogInformation(
+                "Board list loaded in {BoardQueryDurationMs} ms. Count: {BoardCount}",
+                durationMs,
+                boards.Count);
+        }
 
         return Results.Ok(boards);
     }

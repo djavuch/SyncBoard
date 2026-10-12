@@ -38,10 +38,14 @@ public static class CreateBoardEndpoint
 public class CreateBoardCommandHandler : IRequestHandler<CreateBoardCommand, IResult>
 {
     private readonly AppDbContext _dbContext;
+    private readonly ILogger<CreateBoardCommandHandler> _logger;
 
-    public CreateBoardCommandHandler(AppDbContext dbContext)
+    public CreateBoardCommandHandler(
+        AppDbContext dbContext,
+        ILogger<CreateBoardCommandHandler> logger)
     {
         _dbContext = dbContext;
+        _logger = logger;
     }
 
     public async Task<IResult> Handle(CreateBoardCommand request, CancellationToken ct)
@@ -50,13 +54,17 @@ public class CreateBoardCommandHandler : IRequestHandler<CreateBoardCommand, IRe
 
         if (string.IsNullOrWhiteSpace(title))
         {
+            _logger.LogInformation(
+                "Board creation rejected: title is empty. User {UserId}",
+                request.OwnerId);
+
             return Results.BadRequest(new
             {
                 Error = "Board title is required."
             });
         }
 
-        if (title.Length  > 256)
+        if (title.Length > 256)
         {
             return Results.BadRequest(new
             {
@@ -74,6 +82,9 @@ public class CreateBoardCommandHandler : IRequestHandler<CreateBoardCommand, IRe
         _dbContext.Boards.Add(board);
 
         await _dbContext.SaveChangesAsync(ct);
+        
+        _logger.LogInformation("Board {BoardId} created by {UserId}", 
+            board.Id, request.OwnerId);
             
         return Results.Ok(new
         {

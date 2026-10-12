@@ -7,6 +7,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		compose.yaml = compose.yaml
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SyncBoard.Tests", "SyncBoard.Tests\SyncBoard.Tests.csproj", "{F190AB63-D024-42B3-A401-A213B5B47AC6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,5 +19,9 @@ Global
 		{15050B3A-32BC-4B17-B2D6-E47409DEA386}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{15050B3A-32BC-4B17-B2D6-E47409DEA386}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{15050B3A-32BC-4B17-B2D6-E47409DEA386}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F190AB63-D024-42B3-A401-A213B5B47AC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F190AB63-D024-42B3-A401-A213B5B47AC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F190AB63-D024-42B3-A401-A213B5B47AC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F190AB63-D024-42B3-A401-A213B5B47AC6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

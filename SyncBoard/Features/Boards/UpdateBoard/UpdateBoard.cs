@@ -53,7 +53,9 @@ public class UpdateBoardCommandHandler : IRequestHandler<UpdateBoardCommand, IRe
             });
         }
 
-        if (request.Title.Length  > 256)
+        var title = request.Title.Trim();
+        
+        if (title.Length  > 256)
         {
             return Results.BadRequest(new
             {
