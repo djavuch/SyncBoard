@@ -65,20 +65,33 @@ public class CreateCardCommandHandler : IRequestHandler<CreateCardCommand, IResu
 
         if (column.Board.OwnerId != request.UserId)
             return Results.Forbid();
-
-        var card = new Card(Guid.CreateVersion7(), request.Title, request.ColumnId);
-
+        
+        var lastPosition = await _dbContext.Cards
+            .Where(c => c.ColumnId == request.ColumnId)
+            .MaxAsync(c => (int?)c.Position);
+        
+        var nextPosition = (lastPosition ?? -1) + 1;
+        
+        var card = new Card(Guid.CreateVersion7(), request.Title, request.ColumnId)
+        {
+            Position = nextPosition
+        };
+        
         _dbContext.Cards.Add(card);
+        
+        column.Board.UpdateVersion();
+        
         await _dbContext.SaveChangesAsync(ct);
-
+        
         await _hub.Clients.Group(column.BoardId.ToString())
             .SendAsync("CardCreated", new CardCreatedEvent(
-                card.Id, card.Title, card.ColumnId, card.Position), ct);
+                    card.Id, card.Title, card.ColumnId, card.Position), 
+                ct);
 
-        return Results.Ok(new
-        {
-            Id = card.Id, 
-            Title = card.Title
-        });
+        return Results.Ok(new CreateCardResponse(
+            card.Id,
+            card.Title,
+            card.ColumnId,
+            card.Position));
     }
 }

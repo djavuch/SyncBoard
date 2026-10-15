@@ -16,6 +16,9 @@ public class BoardConfiguration :IEntityTypeConfiguration<Board>
         builder.Property(b => b.Title)
             .IsRequired()
             .HasMaxLength(256);
+
+        builder.Property(b => b.Version)
+            .IsConcurrencyToken();
         
         builder.HasOne(b => b.Owner)         
             .WithMany(u => u.Boards)         

@@ -49,6 +49,8 @@ public class DeleteColumnCommandHandler : IRequestHandler<DeleteColumnCommand, I
         if (column.Board.OwnerId != request.UserId)
             return Results.Forbid();
 
+        column.Board.UpdateVersion();
+        
         _dbContext.Columns.Remove(column);
         await _dbContext.SaveChangesAsync(ct);
 

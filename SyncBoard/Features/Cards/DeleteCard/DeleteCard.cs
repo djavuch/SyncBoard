@@ -49,6 +49,8 @@ public class DeleteCardCommandHandler : IRequestHandler<DeleteCardCommand, IResu
         if (card.Column?.Board?.OwnerId != request.UserId)
             return Results.Forbid();
 
+        card.Column.Board.UpdateVersion();
+        
         _dbContext.Cards.Remove(card);
         await _dbContext.SaveChangesAsync(ct);
 

@@ -6,6 +6,7 @@ public class Board
     public string Title { get; set; } = string.Empty;
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
     public Guid? OwnerId { get; private set; }
+    public Guid Version { get; private set; }
     public User? Owner { get; set; }
 
     public ICollection<Column> Columns { get; init; } = new List<Column>();
@@ -28,5 +29,11 @@ public class Board
             throw new ArgumentException("Board title can't be empty.");
         
         Title = newTitle;
+    }
+
+
+    public void UpdateVersion()
+    {
+        Version = Guid.NewGuid();
     }
 }

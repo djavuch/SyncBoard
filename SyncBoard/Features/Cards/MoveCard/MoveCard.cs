@@ -58,6 +58,8 @@ public class MoveCardCommandHandler : IRequestHandler<MoveCardCommand, IResult>
 
         if (card.Column.Board.OwnerId != request.UserId)
             return Results.Forbid();
+        
+        var board = card.Column.Board;
 
         var fromColumnId = card.ColumnId;
 
@@ -72,8 +74,69 @@ public class MoveCardCommandHandler : IRequestHandler<MoveCardCommand, IResult>
         if (targetColumn.Board.Id != boardId)
             return Results.BadRequest("Target column is on a different board.");
         
+        if (request.Position < 0)
+        {
+            return Results.BadRequest("Position can't be negative.");
+        }
+
+// Загружаем карточки исходной колонки в текущем порядке.
+// Они отслеживаются EF Core, поскольку будем менять их позиции.
+        var sourceCards = await _dbContext.Cards
+            .Where(c => c.ColumnId == fromColumnId)
+            .OrderBy(c => c.Position)
+            .ThenBy(c => c.Id)
+            .ToListAsync(ct);
+
+// Убираем карточку только из списка в памяти.
+// Из базы данных её не удаляем.
+        sourceCards.Remove(card);
+
+// При перемещении внутри колонки используем тот же список.
+        var targetCards = sourceCards;
+
+// При переносе в другую колонку загружаем её карточки отдельно.
+        if (fromColumnId != request.ToColumnId)
+        {
+            targetCards = await _dbContext.Cards
+                .Where(c => c.ColumnId == request.ToColumnId)
+                .OrderBy(c => c.Position)
+                .ThenBy(c => c.Id)
+                .ToListAsync(ct);
+        }
+
+// Вставка по индексу Count разрешена: это добавление в конец.
+// Больше Count — уже несуществующее место.
+        if (request.Position > targetCards.Count)
+        {
+            return Results.BadRequest(
+                $"Position must be between 0 and {targetCards.Count}.");
+        }
+
+// Вставляем карточку на выбранное место.
+        targetCards.Insert(request.Position, card);
+
+// Обновляем принадлежность карточки к колонке.
         card.ColumnId = request.ToColumnId;
-        card.Position = request.Position;
+
+// Пересчитываем позиции исходной колонки.
+        for (var i = 0; i < sourceCards.Count; i++)
+        {
+            sourceCards[i].Position = i;
+        }
+
+// При переносе между колонками пересчитываем и целевую.
+// Внутри одной колонки списки совпадают — первый цикл уже всё сделал.
+        if (fromColumnId != request.ToColumnId)
+        {
+            for (var i = 0; i < targetCards.Count; i++)
+            {
+                targetCards[i].Position = i;
+            }
+        }
+        
+        board.UpdateVersion();
+
+// Сохраняем все изменённые карточки одним вызовом.
         await _dbContext.SaveChangesAsync(ct);
 
         await _hub.Clients.Group(boardId.ToString())
